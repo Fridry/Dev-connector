@@ -1,5 +1,0 @@
-{
-  "mongoURI": "mongodb+srv://fridry:12345@devconnector-rz9dn.mongodb.net/test?retryWrites=true&w=majority",
-  "jwtSecret": "fridry2020dev",
-  "githubToken": "8246687364057d55b2889f99e4922c7c297264d7"
-}
