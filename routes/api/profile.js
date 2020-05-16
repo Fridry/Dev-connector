@@ -1,9 +1,12 @@
 const express = require("express");
 const { check, validationResult } = require("express-validator");
+const config = require("config");
+const request = require("request");
 
 const auth = require("../../middleware/auth");
 const Profile = require("../../models/Profile");
 const User = require("../../models/User");
+const Post = require("../../models/Post");
 
 const router = express.Router();
 
@@ -48,7 +51,7 @@ router.post(
 
     const {
       company,
-      webstite,
+      website,
       location,
       bio,
       status,
@@ -65,7 +68,7 @@ router.post(
 
     profileFields.user = req.user.id;
     if (company) profileFields.company = company;
-    if (webstite) profileFields.webstite = webstite;
+    if (website) profileFields.website = website;
     if (location) profileFields.location = location;
     if (bio) profileFields.bio = bio;
     if (status) profileFields.status = status;
@@ -150,6 +153,9 @@ router.get("/user/:user_id", async (req, res) => {
 // @acess  Private
 router.delete("/", auth, async (req, res) => {
   try {
+    //Remover user posts
+    await Post.deleteMany({ user: req.user.id });
+
     //Remove Profile
     await Profile.findOneAndRemove({ user: req.user.id });
 
@@ -321,11 +327,31 @@ router.delete("/education/:edu_id", auth, async (req, res) => {
 // @route  GET api/profile/github/:username
 // @desc   Get user & repos from Github
 // @acess  Public
-router.get("/github/:username", (req, res) => {
+router.get("/github/:username", async (req, res) => {
   try {
-  } catch (error) {
-    console.error(error.message);
-    res.status(500).send("Server Error");
+    const options = {
+      uri: encodeURI(
+        `https://api.github.com/users/${req.params.username}/repos?per_page=5&sort=created:asc`
+      ),
+      method: "GET",
+      headers: {
+        "user-agent": "node.js",
+        Authorization: `token ${config.get("githubToken")}`,
+      },
+    };
+
+    request(options, (error, response, body) => {
+      if (error) console.error(error);
+
+      if (response.statusCode !== 200) {
+        return res.status(404).json({ msg: "No Github profile found" });
+      }
+
+      res.json(JSON.parse(body));
+    });
+  } catch (err) {
+    console.error(err.message);
+    return res.status(404).json({ msg: "No Github profile found" });
   }
 });
 
